@@ -6,11 +6,12 @@ using namespace std;
 
 enum Menu { UPDATE = 1, BUILDBST, PRINT, SEARCH, DELETE, EXIT };
 
-void updateInputFile(string fileName);
+void updateInputFile(string fileName, string deleteWord);
 void populateBinaryTree(BinarySearchTree& tree, string fileName);
 void printBinaryTree(BinarySearchTree tree);
 void searchBinaryTree(BinarySearchTree tree);
-void deleteFromBinaryTree(BinarySearchTree& tree);
+// deleteFromBinaryTree deletes *exact* matches
+void deleteFromBinaryTree(BinarySearchTree& tree, string fileName);
 bool isPunctuation(char c);
 void purgeInputErrors(string error);
 
@@ -32,7 +33,7 @@ int main() {
 
 		switch (selection) {
 		case UPDATE:
-			updateInputFile(fileName);
+			updateInputFile(fileName, "");
 			cout << "\n**Input File Updated**\n\n";
 			break;
 		case BUILDBST:
@@ -46,7 +47,7 @@ int main() {
 			searchBinaryTree(tree);
 			break;
 		case DELETE:
-			deleteFromBinaryTree(tree);
+			deleteFromBinaryTree(tree, fileName);
 			break;
 		case EXIT:
 			cout << "\nTerminating Program\n";
@@ -59,7 +60,7 @@ int main() {
 	return 0;
 }
 
-void updateInputFile(string fileName) {
+void updateInputFile(string fileName, string deleteWord) {
 	ifstream infile(fileName);
 
 	if (!infile) {
@@ -94,7 +95,16 @@ void updateInputFile(string fileName) {
 
 			// Exclude words with up to 4 letters
 			if (word.length() > MIN_LETTERS) {
-				result += word + " ";
+				if (word == deleteWord && deleteWord != "") {
+					int repeats = word.length();
+					word.clear();
+
+					word.insert(0, repeats, '!');
+					result += word + " ";
+				}
+				else {
+					result += word + " ";
+				}
 			}
 		}
 	}
@@ -156,13 +166,22 @@ void searchBinaryTree(BinarySearchTree tree) {
 	cout << endl;
 }
 
-void deleteFromBinaryTree(BinarySearchTree& tree) {
+// deleteFromBinaryTree deletes *exact* matches
+void deleteFromBinaryTree(BinarySearchTree& tree, string fileName) {
 	string query;
+	bool wordWasFound = false;
 
 	cout << "\nSEARCH\nEnter word to delete: ";
 	cin >> query;
 
-	tree.deleteNode(query);
+	tree.deleteNode(query, wordWasFound);
+	
+	// Replace all instances of the word with exclamation marks
+	if (wordWasFound) {
+		updateInputFile(fileName, query);
+		//fstream iofile{ fileName, ios::in | ios::out };
+
+	}
 }
 
 bool isPunctuation(char c) {

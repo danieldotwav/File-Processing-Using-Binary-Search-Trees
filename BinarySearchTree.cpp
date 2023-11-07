@@ -174,10 +174,10 @@ void BinarySearchTree::deleteFromTree(Node*& nodeToDelete) {
 	}
 }
 
-void BinarySearchTree::deleteNode(const std::string& deleteWord) {
+void BinarySearchTree::deleteNode(const std::string& deleteWord, bool& found) {
 	Node* current; // pointer to traverse tree
 	Node* trailCurrent; // pointer behind current
-	bool found = false;
+	found = false;
 
 	if (root == nullptr) {
 		std::cout << "\nError: Cannot delete from an empty tree\n\n";

@@ -36,7 +36,7 @@ public:
 	void deleteFromTree(Node*& p);
 
 	// Postcondition:
-	void deleteNode(const std::string& deleteItem);
+	void deleteNode(const std::string& deleteItem, bool& found);
 
 protected:
 	Node* root;
