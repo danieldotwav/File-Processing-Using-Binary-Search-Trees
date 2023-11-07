@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BinarySearchTree.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="Node.h" />
   </ItemGroup>
   <ItemGroup>

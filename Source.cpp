@@ -4,73 +4,70 @@
 #include "BinarySearchTree.h"
 using namespace std;
 
-enum Menu { UPDATE = 1, PRINT, EXIT };
+enum Menu { UPDATE = 1, BUILDBST, PRINT, SEARCH, DELETE, EXIT };
 
-const int WORD_WIDTH = 15;
-const int COUNT_WIDTH = 5;
-const int TABLE_WIDTH = 21;
-const int MIN_LETTERS = 4;
+void updateInputFile(string fileName);
+void populateBinaryTree(BinarySearchTree& tree, string fileName);
+void printBinaryTree(BinarySearchTree tree);
+void searchBinaryTree(BinarySearchTree tree);
+void deleteFromBinaryTree(BinarySearchTree& tree);
+bool isPunctuation(char c);
+void purgeInputErrors(string error);
 
-void UpdateInputFile(string fileName);
-void PopulatePrintAndDestroyTree(string fileName);
-void PopulateBinaryTree(BinarySearchTree& tree, string fileName);
-void PrintTreeAsTable(BinarySearchTree tree);
-bool IsPunctuation(char c);
-void PurgeInputErrors(string error);
-
-// TODO: Currently, my add node function checks to see if a word
-// exists before adding it. If it does exist, it just increments
-// the count in the existing node.
-// Is this fine or should I have a separate search function that
-// checks for a duplicate first before 
 int main() {
+	BinarySearchTree tree;
 	string fileName = "Input.txt";
-
 	int selection;
-	//BinarySearchTree tree;
 
 	do {
-		cout << "Menu\nPlease select one of the following:\n"
+		cout << "MENU\nPlease select one of the following:\n"
 			"1. Update Input File\n"
-			"2. Print BST\n"
-			"3. Exit\n"
+			"2. Build BST\n"
+			"3. Print BST\n"
+			"4. Search\n"
+			"5. Delete\n"
+			"6. Exit\n"
 			"Selection: ";
 		cin >> selection;
 
 		switch (selection) {
 		case UPDATE:
-			UpdateInputFile(fileName);
+			updateInputFile(fileName);
 			cout << "\n**Input File Updated**\n\n";
 			break;
+		case BUILDBST:
+			populateBinaryTree(tree, fileName);
+			cout << "\n**Binary Tree Built Successfully**\n\n";
+			break;
 		case PRINT:
-			PopulatePrintAndDestroyTree(fileName);
+			printBinaryTree(tree);
+			break;
+		case SEARCH:
+			searchBinaryTree(tree);
+			break;
+		case DELETE:
+			deleteFromBinaryTree(tree);
 			break;
 		case EXIT:
 			cout << "\nTerminating Program\n";
 			break;
 		default:
-			PurgeInputErrors("Invalid Menu Option");
+			purgeInputErrors("Invalid Menu Option");
 		}
 	} while (selection != EXIT);
 
 	return 0;
 }
 
-
-// TODO: Should I traverse the input file and make changes as I go,
-// or can I keep the current implementation. I read the content of
-// the file into a string and process the words, then CLOSE the input
-// file. Reopen the input file as an istringstream, clear its contents
-// and then write back to it.
-void UpdateInputFile(string fileName) {
+void updateInputFile(string fileName) {
 	ifstream infile(fileName);
 
 	if (!infile) {
-		cout << "ERROR: Input file not found. Terminating program\n";
+		cout << "Error: Input file not found. Terminating program\n";
 		exit(EXIT_FAILURE);
 	}
 	if (infile.peek() == EOF) {
-		cout << "ERROR: Input file is empty. Terminating program\n";
+		cout << "Error: Input file is empty. Terminating program\n";
 		infile.close();
 		exit(EXIT_FAILURE);
 	}
@@ -80,7 +77,7 @@ void UpdateInputFile(string fileName) {
 
 	while (getline(infile, line)) {
 		for (char& c : line) {
-			if (IsPunctuation(c)) {
+			if (isPunctuation(c)) {
 				c = ' ';
 			}
 			else {
@@ -116,77 +113,22 @@ void UpdateInputFile(string fileName) {
 	}
 }
 
-/*void UpdateInputFile(string fileName) {
-	ifstream infile(fileName);
+void populateBinaryTree(BinarySearchTree& tree, string fileName) {
+	try {
+		ifstream infile(fileName);
+		if (infile) {
+			string word;
 
-	if (!infile) {
-		cout << "ERROR: Input file not found. Terminating program\n";
-		exit(EXIT_FAILURE);
-	}
-	if (infile.peek() == EOF) {
-		cout << "ERROR: Input file is empty. Terminating program\n";
-		infile.close();
-		exit(EXIT_FAILURE);
-	}
-
-	// Process Input File
-	string line;
-	string content;
-	stringstream ss;
-
-	while (getline(infile, line)) {
-		content += line + ' ';
-	}
-
-	infile.close();
-
-	// Replace punctuation with space
-	string modified;
-	for (char& c : content) {
-		if (IsPunctuation(c)) {
-			modified.push_back(' ');
+			while (infile >> word) {
+				tree.insert(word);
+			}
+			infile.close();
 		}
 		else {
-			modified.push_back(tolower(c));
+			cout << "Error opening " << fileName << " for reading.\n"
+				"Terminating Program\n";
+			exit(EXIT_FAILURE);
 		}
-	}
-
-	// Remove punctuation
-	string result, word;
-	istringstream stream(modified);
-
-	while (stream >> word) {
-		// Remove letters following an apostrophe
-		size_t pos = word.find('\'');
-		if (pos != string::npos) {
-			word = word.substr(0, pos);
-		}
-
-		// Exclude words with up to 4 letters
-		if (word.length() > MIN_LETTERS) {
-			result += word + " ";
-		}
-	}
-
-	// Write back to the input file
-	ofstream outfile(fileName, ios::trunc);
-	if (outfile) {
-		outfile << result;
-		outfile.close();
-	}
-	else {
-		cout << "Error opening " << fileName << " for reading\n"
-			"Terminating Program\n";
-		exit(EXIT_FAILURE);
-	}
-}*/
-
-void PopulatePrintAndDestroyTree(string fileName) {
-	BinarySearchTree tree;
-	try {
-		PopulateBinaryTree(tree, fileName);
-		PrintTreeAsTable(tree);
-		tree.destroyTree();
 	}
 	catch (const bad_alloc& e) {
 		cout << "Error: Memory cannot be allocated for the BST. Please try again later\n" << e.what() << "\n\n";
@@ -194,129 +136,41 @@ void PopulatePrintAndDestroyTree(string fileName) {
 	}
 }
 
-void PopulateBinaryTree(BinarySearchTree& tree, string fileName) {
-	ifstream infile(fileName);
-
-	if (infile) {
-		string word;
-
-		while (infile >> word) {
-			tree.insert(word);
-		}
-		infile.close();
-	}
-	else {
-		cout << "Error opening " << fileName << " for reading.\n"
-			"Terminating Program\n";
-		exit(EXIT_FAILURE);
-	}
-}
-
-void PrintTreeAsTable(BinarySearchTree tree) {
+void printBinaryTree(BinarySearchTree tree) {
 	cout << '\n' << left << setw(WORD_WIDTH) << "Word" << right << setw(COUNT_WIDTH) << "Count\n\n";
-	tree.inOrderTraversal();
-	cout << endl << endl;
+	tree.printInorder();
+	
+	cout << "\nTotal Unique Words Processed: " << tree.treeNodeCount() << "\n\n";
 }
 
-bool IsPunctuation(char c) {
+void searchBinaryTree(BinarySearchTree tree) {
+	string query;
+
+	cout << "\nSEARCH\nEnter search word: ";
+	cin >> query;
+
+	cout << "\nSearch Results: '" << query << "':\n";
+	std::cout << '\n' << std::left << std::setw(WORD_WIDTH) << "Word" << std::right << std::setw(COUNT_WIDTH) << "Count\n";
+	
+	tree.findWordsContaining(query);
+	cout << endl;
+}
+
+void deleteFromBinaryTree(BinarySearchTree& tree) {
+	string query;
+
+	cout << "\nSEARCH\nEnter word to delete: ";
+	cin >> query;
+
+	tree.deleteNode(query);
+}
+
+bool isPunctuation(char c) {
 	return string(".,;:\"!?()[]{}<>-_").find(c) != string::npos;
 }
 
-void PurgeInputErrors(string error) {
+void purgeInputErrors(string error) {
 	cin.clear();
 	cin.ignore(numeric_limits<streamsize>::max(), '\n');
 	cout << "Error: " << error << "\n\n";
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/***********************************************************************************/
-
-// Main before loop
-	//string originalFileName = "Input.txt";
-	//string backupFileName = "Input_backup.txt";
-	//CopyFileContent(originalFileName, backupFileName);
-
-// After
-	//CopyFileContent(backupFileName, originalFileName);
-
-// Prototype/Definition
-
-//void CopyFileContent(const string& originalFileName, const string& backupFileName);
-
-/*
-void CopyFileContent(const string& originalFileName, const string& backupFileName) {
-	ifstream infile(originalFileName);
-	ofstream outfile(backupFileName);
-
-	if (!infile) {
-		cout << "Error opening " << originalFileName << " for reading.\n";
-		return;
-	}
-
-	if (!outfile) {
-		cout << "Error opening " << backupFileName << " for writing.\n";
-		return;
-	}
-
-	char c;
-	while (infile.get(c)) {
-		outfile.put(c);
-	}
-
-	infile.close();
-	outfile.close();
-}
-
-*/

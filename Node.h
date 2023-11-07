@@ -7,9 +7,9 @@ class Node {
 public:
 	std::string word;
 	int count;
-	Node* leftLink;
-	Node* rightLink;
-	Node() : word(""), count(1), leftLink(nullptr), rightLink(nullptr) {}
+	Node* left;
+	Node* right;
+	Node() : word(""), count(1), left(nullptr), right(nullptr) {}
 };
 
 #endif

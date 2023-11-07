@@ -1,6 +1,4 @@
 #include "BinarySearchTree.h"
-const int WORD_WIDTH = 15;
-const int COUNT_WIDTH = 5;
 
 BinarySearchTree::BinarySearchTree() {
 	root = nullptr;
@@ -12,25 +10,30 @@ BinarySearchTree::~BinarySearchTree() {
 
 const BinarySearchTree& BinarySearchTree::operator=(const BinarySearchTree& otherTree) {
 	if (this != &otherTree) {
-		if (root != nullptr) {
+		Node* tempRoot = nullptr;
+		try {
+			copyTree(tempRoot, otherTree.root);
 			destroy(root);
+			root = tempRoot;
 		}
-		if (otherTree.root == nullptr) {
-			root = nullptr;
-		}
-		else {
-			copyTree(root, otherTree.root);
+		catch (const std::bad_alloc& e) {
+			std::cerr << "Error: Memory cannot be allocated for the BST. Original tree object is unchanged. Please try again later.\n" << e.what() << "\n\n";
+			destroy(tempRoot);
 		}
 	}
 	return *this;
 }
 
-BinarySearchTree::BinarySearchTree(const BinarySearchTree& otherTree) {
-	if (otherTree.root == nullptr) {
-		root = nullptr;
+BinarySearchTree::BinarySearchTree(const BinarySearchTree& otherTree) : root(nullptr) {
+	try {
+		if (otherTree.root != nullptr) {
+			copyTree(root, otherTree.root);
+		}
 	}
-	else {
-		copyTree(root, otherTree.root);
+	catch (const std::bad_alloc& e) {
+		std::cerr << "Error: Copy was not successful, empty object created instead. Please try again later.\n" << e.what() << "\n\n";
+		destroy(root);
+		root = nullptr;
 	}
 }
 
@@ -38,7 +41,7 @@ bool BinarySearchTree::isEmpty() const {
 	return (root == nullptr);
 }
 
-void BinarySearchTree::inOrderTraversal() const {
+void BinarySearchTree::printInorder() const {
 	inorder(root);
 }
 
@@ -50,42 +53,16 @@ void BinarySearchTree::destroyTree() {
 	destroy(root);
 }
 
-bool BinarySearchTree::search(const std::string& searchWord) const {
-	Node* current;
-	bool found = false;
-
-	if (root == nullptr) {
-		std::cout << "\nError: Cannot search an empty tree\n\n";
-	}
-	else {
-		current = root;
-
-		while (current != nullptr && !found) {
-			if (current->word == searchWord) {
-				found = true;
-			}
-			else if (current->word > searchWord) {
-				current = current->leftLink;
-			}
-			else {
-				current = current->rightLink;
-			}
-		}
-	}
-	return found;
-}
-
 void BinarySearchTree::insert(const std::string& insertWord) {
 	Node* current; // pointer to traverse tree
 	Node* trailCurrent = nullptr; // pointer behind current
-	Node* newNode; // pointer to create the new node
 	bool duplicateFound = false;
-
+	
 	if (root == nullptr) {
 		root = new Node;
 		root->word = insertWord;
-		root->leftLink = nullptr;
-		root->rightLink = nullptr;
+		root->left = nullptr;
+		root->right = nullptr;
 	}
 	else {
 		current = root;
@@ -98,67 +75,99 @@ void BinarySearchTree::insert(const std::string& insertWord) {
 				duplicateFound = true;
 			}
 			else if (current->word > insertWord) {
-				current = current->leftLink;
+				current = current->left;
 			}
 			else {
-				current = current->rightLink;
+				current = current->right;
 			}
 		}
 
 		if (duplicateFound == false) {
-			Node* newNode = new Node;
-			newNode->word = insertWord;
-			newNode->leftLink = nullptr;
-			newNode->rightLink = nullptr;
+			Node* insertNode = new Node;
+			insertNode->word = insertWord;
+			insertNode->left = nullptr;
+			insertNode->right = nullptr;
 
 			if (trailCurrent->word > insertWord) {
-				trailCurrent->leftLink = newNode;
+				trailCurrent->left = insertNode;
 			}
 			else {
-				trailCurrent->rightLink = newNode;
+				trailCurrent->right = insertNode;
 			}
 		}
 	}
 }
 
-void BinarySearchTree::deleteFromTree(Node*& p) {
+void BinarySearchTree::findWordsContaining(const std::string searchWord) const {
+	std::string wordList;
+	bool isMatch = false;
+	search(root, searchWord, wordList, isMatch);
+	
+	if (wordList.empty() && isMatch == false) {
+		std::cout << "**No Matches Found**\n";
+	}
+	else {
+		std::stringstream matchingWords(wordList);
+		std::string word{ "" };
+
+		while (getline(matchingWords, word)) {
+			std::cout << word << '\n';
+		}
+	}
+}
+
+void BinarySearchTree::search(Node* currentNode, const std::string& searchWord, std::string& wordList, bool& isMatch) const {
+	if (currentNode != nullptr) {
+		search(currentNode->left, searchWord, wordList, isMatch);
+		if (currentNode->word.find(searchWord) != std::string::npos) {
+			std::cout << std::left << std::setw(WORD_WIDTH) << currentNode->word
+				<< std::right << std::setw(COUNT_WIDTH) << currentNode->count << std::endl;
+			isMatch = true;
+		}
+		search(currentNode->right, searchWord, wordList, isMatch);
+	}
+}
+
+void BinarySearchTree::deleteFromTree(Node*& nodeToDelete) {
 	Node* current; // pointer to traverse the tree
 	Node* trailCurrent; // pointer behind current
 	Node* temp; // pointer to delete the node
 
-	if (p == nullptr) {
+	if (nodeToDelete == nullptr) {
 		std::cout << "Error: The node to be deleted does not exist\n\n";
 	}
-	else if (p->leftLink == nullptr && p->rightLink == nullptr) {
-		temp = p;
-		p = nullptr;
+	else if (nodeToDelete->left == nullptr && nodeToDelete->right == nullptr) {
+		temp = nodeToDelete;
+		nodeToDelete = nullptr;
 		delete temp;
 	}
-	else if (p->leftLink == nullptr) {
-		temp = p;
-		p = temp->rightLink;
+	else if (nodeToDelete->left == nullptr) {
+		temp = nodeToDelete;
+		nodeToDelete = temp->right;
 		delete temp;
 	}
-	else if (p->rightLink == nullptr) {
-		temp = p;
-		p = temp->leftLink;
+	else if (nodeToDelete->right == nullptr) {
+		temp = nodeToDelete;
+		nodeToDelete = temp->left;
 		delete temp;
 	}
 	else {
-		current = p->leftLink;
+		current = nodeToDelete->left;
 		trailCurrent = nullptr;
 
-		while (current->rightLink != nullptr) {
+		while (current->right != nullptr) {
 			trailCurrent = current;
-			current = current->rightLink;
+			current = current->right;
 		}
-		p->word = current->word;
+
+		nodeToDelete->word = current->word;
+		nodeToDelete->count = current->count;
 
 		if (trailCurrent == nullptr) {
-			p->leftLink = current->leftLink;
+			nodeToDelete->left = current->left;
 		}
 		else {
-			trailCurrent->rightLink = current->leftLink;
+			trailCurrent->right = current->left;
 		}
 
 		delete current;
@@ -185,10 +194,10 @@ void BinarySearchTree::deleteNode(const std::string& deleteWord) {
 				trailCurrent = current;
 
 				if (current->word > deleteWord) {
-					current = current->leftLink;
+					current = current->left;
 				}
 				else {
-					current = current->rightLink;
+					current = current->right;
 				}
 			}
 		}
@@ -201,11 +210,12 @@ void BinarySearchTree::deleteNode(const std::string& deleteWord) {
 				deleteFromTree(root);
 			}
 			else if (trailCurrent->word > deleteWord) {
-				deleteFromTree(trailCurrent->leftLink);
+				deleteFromTree(trailCurrent->left);
 			}
 			else {
-				deleteFromTree(trailCurrent->rightLink);
+				deleteFromTree(trailCurrent->right);
 			}
+			std::cout << "Success: \"" << deleteWord << "\"" << " has been deleted\n\n";
 		}
 		else {
 			std::cout << "\nError: The word to be deleted is not in the tree\n\n";
@@ -221,33 +231,46 @@ void BinarySearchTree::copyTree(Node*& copiedTreeRoot, Node* otherTreeRoot) {
 		copiedTreeRoot = new Node;
 		copiedTreeRoot->word = otherTreeRoot->word;
 		copiedTreeRoot->count = otherTreeRoot->count;
-		copyTree(copiedTreeRoot->leftLink, otherTreeRoot->leftLink);
-		copyTree(copiedTreeRoot->rightLink, otherTreeRoot->rightLink);
+		copyTree(copiedTreeRoot->left, otherTreeRoot->left);
+		copyTree(copiedTreeRoot->right, otherTreeRoot->right);
 	}
 }
 
 void BinarySearchTree::destroy(Node*& p) {
 	if (p != nullptr) {
-		destroy(p->leftLink);
-		destroy(p->rightLink);
+		destroy(p->left);
+		destroy(p->right);
 		delete p;
 		p = nullptr;
 	}
 }
 
-void BinarySearchTree::inorder(Node* p) const {
-	if (p != nullptr) {
-		inorder(p->leftLink);
-		std::cout << std::left << std::setw(WORD_WIDTH) << p->word 
-			<< std::right << std::setw(COUNT_WIDTH) << p->count << std::endl;
-		inorder(p->rightLink);
+void BinarySearchTree::inorder(Node* currentNode) const {
+	if (currentNode != nullptr) {
+		inorder(currentNode->left);
+		std::cout << std::left << std::setw(WORD_WIDTH) << currentNode->word 
+			<< std::right << std::setw(COUNT_WIDTH) << currentNode->count << std::endl;
+		inorder(currentNode->right);
 	}
 }
 
-int BinarySearchTree::nodeCount(Node* p) const {
+int BinarySearchTree::nodeCount(Node* currentNode) const {
 	int count = 0;
-	if (p != nullptr) {
-		count = (1 + nodeCount(p->leftLink) + nodeCount(p->rightLink));
+	if (currentNode != nullptr) {
+		count = (1 + nodeCount(currentNode->left) + nodeCount(currentNode->right));
 	}
 	return count;
 }
+
+
+/*
+void BinarySearchTree::search(Node* currentNode, const std::string& searchWord, std::string& wordList) const {
+	if (currentNode != nullptr) {
+		search(currentNode->left, searchWord, wordList);
+		if (currentNode->word.find(searchWord) != std::string::npos) {
+			wordList += currentNode->word + '\n';
+		}
+		search(currentNode->right, searchWord, wordList);
+	}
+}
+*/
